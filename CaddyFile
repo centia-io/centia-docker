@@ -1,0 +1,17 @@
+{
+    auto_https off
+    frankenphp
+}
+
+:80  {
+    log
+    encode zstd gzip
+    root /app/geocloud2/public
+    php_server {
+        root /app/geocloud2/public
+        worker {
+            file index.php
+            watch
+            }
+    }
+}

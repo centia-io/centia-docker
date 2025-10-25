@@ -1,0 +1,65 @@
+networks:
+  internal:
+    external: false
+
+services:
+  centia-io-http:
+    container_name: centia-io-http
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: http
+    image: centia/centia-io:http
+    ports:
+      - "81:80"
+    networks:
+      - default
+      - internal
+    env_file: conn.env
+    depends_on:
+      - postgres
+
+  centia-io-event:
+    container_name: centia-io-event
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: event
+    image: centia/centia-io:event
+    ports:
+      - "8082:80"
+    networks:
+      - default
+      - internal
+    env_file: conn.env
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    env_file: conn.env
+#   volumes:
+#     - pgdata:/var/lib/postgresql/data
+    networks:
+      - default
+      - internal
+
+  redis:
+    image: redis:6.2.6
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+
+
+
+
+
+
+
+
