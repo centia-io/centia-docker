@@ -27,7 +27,7 @@ services:
       target: event
     image: centia/centia-io:event
     ports:
-      - "8082:80"
+      - "82:80"
     networks:
       - default
       - internal

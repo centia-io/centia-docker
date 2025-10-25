@@ -1,8 +1,8 @@
 # Centia Docker
 
 This repository provides a Docker-based setup for running the Centia-io stack with FrankenPHP (Caddy), 
-a PHP app, PostgreSQL/PostGIS, and Redis. 
-It includes two app services (HTTP and Event), a Postgres/PostGIS database, and Redis for caching/queues.
+PostgreSQL/PostGIS, and Redis. 
+It includes two app services (HTTP and WebSocket), a Postgres/PostGIS database, and Redis for caching/queues.
 
 ## Prerequisites
 - Docker Desktop or Docker Engine + Docker Compose v2
