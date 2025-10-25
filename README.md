@@ -115,7 +115,7 @@ All installer pages are accessible via your browser.
 - Configuration and credentials
 - Pages and workflow
     - 1) Index (overview): `index.php`
-    - 2) Prepare a database for GC2: `prepare.php?db=...`
+    - 2) Prepare a database for Centia.io: `prepare.php?db=...`
     - 3) Create the global user database: `userdatabase.php`
 - Handled error codes and elevation prompts
 - Typical usage scenarios
@@ -125,7 +125,7 @@ All installer pages are accessible via your browser.
 
 
 ## Overview
-The install system lets you set up GC2 on an existing PostgreSQL/PostGIS cluster. It performs the following:
+The install system lets you set up Centia.io on an existing PostgreSQL/PostGIS cluster. It performs the following:
 
 - Checks that your server environment is ready (PHP, MapScript, writable directories).
 - For each non-system database, detects whether PostGIS and the `settings` schema are present.
@@ -172,21 +172,21 @@ What it does:
 - Checks if MapScript is installed.
 - Lists PostgreSQL databases and, for each non-system DB, indicates:
     - PostGIS: OK / Missing
-    - GC2 settings schema: OK / Missing
+    - Centia.io settings schema: OK / Missing
 - If `mapcentia` database is missing, shows a warning with a button to create it (`userdatabase.php`).
 - For databases missing requirements, shows an “Install” action that links to `prepare.php?db=<name>`.
 
-System databases that are ignored by the prepare action include: `template0`, `template1`, `postgres`, `postgis_template`, `mapcentia`, `gc2scheduler`, `rdsadmin`.
+System databases that are ignored by the prepare action include: `template0`, `template1`, `postgres`, `postgis_template`, `mapcentia`, `Centia.ioscheduler`, `rdsadmin`.
 
 
-### 2) Prepare a database for GC2: `public/install/prepare.php?db=<yourdb>`
-Use this page to initialize a specific database for GC2.
+### 2) Prepare a database for Centia.io: `public/install/prepare.php?db=<yourdb>`
+Use this page to initialize a specific database for Centia.io.
 
 Steps performed:
 1) Connect to the selected database using the configured credentials. If connection fails, an elevation form is displayed to retry with different credentials.
 2) Create PostGIS extensions (uses `CREATE EXTENSION postgis_raster CASCADE`).
     - If insufficient privileges (SQLSTATE `42501`), you will be prompted for elevated credentials.
-3) Create the GC2 settings schema by running the SQL from `public/install/sql/createSettings.sql`.
+3) Create the Centia.io settings schema by running the SQL from `public/install/sql/createSettings.sql`.
     - Duplicate schema (SQLSTATE `42P06`) is treated as already installed and not a fatal error.
     - Insufficient privileges (SQLSTATE `42501`) prompts for elevated credentials.
 4) Run post-install SQL scripts defined by `app/migration/Sql::get()`. For each script the page shows a badge:
@@ -213,7 +213,7 @@ Steps performed:
 3) Connect to `mapcentia`.
     - Connection failure (SQLSTATE `08006`) triggers the elevation prompt.
 4) Ensure the `users` table exists (using `public/install/sql/createUserTable.sql`).
-5) Run GC2 migrations for the `mapcentia` database (`app/migration/Sql::mapcentia()`).
+5) Run Centia.io migrations for the `mapcentia` database (`app/migration/Sql::mapcentia()`).
 6) Finish with a success message and a link back to the overview.
 
 Note: For `userdatabase.php` there is no special first/last script requirement.
@@ -256,7 +256,7 @@ The installer inspects exception codes/messages and reacts to specific SQLSTATEs
     - Adjust file system permissions so the web server user can write to `app/wms/mapfiles` and `app/tmp`.
 
 - MapScript not installed:
-    - Install MapScript to enable related features. The index page merely reports the status; GC2 core may still run without it depending on features used.
+    - Install MapScript to enable related features. The index page merely reports the status; Centia.io core may still run without it depending on features used.
 
 
 ## Security notes
@@ -270,20 +270,20 @@ The installer inspects exception codes/messages and reacts to specific SQLSTATEs
     - Via environment variables (preferred) or by setting values in `app/conf/Connection.php`.
 
 - Which databases are considered system databases and skipped for prepare actions?
-    - `template0`, `template1`, `postgres`, `postgis_template` and certain GC2 internals like `mapcentia`, `gc2scheduler`, `rdsadmin`.
+    - `template0`, `template1`, `postgres`, `postgis_template` and certain Centia.io internals like `mapcentia`, `Centia.ioscheduler`, `rdsadmin`.
 
 - Can I run the installer multiple times?
     - Yes. It is idempotent with regard to key operations (duplicate schema/database cases are handled) and provides re-run options where needed.
 
 - Does the installer support Docker?
-    - If you run GC2 via Docker, ensure the Postgres container exposes the required environment variables (see `docker/connection.env` and `docker/docker-compose.yml`) and that the web container can reach it.
+    - If you run Centia.io via Docker, ensure the Postgres container exposes the required environment variables (see `docker/connection.env` and `docker/docker-compose.yml`) and that the web container can reach it.
 
 
 ## File map
 - `public/install/index.php` — Overview and checks, per-database status, and links to actions.
-- `public/install/prepare.php` — Prepare a specific database: create extensions, GC2 schema, run post-install scripts, and create owner user.
+- `public/install/prepare.php` — Prepare a specific database: create extensions, Centia.io schema, run post-install scripts, and create owner user.
 - `public/install/userdatabase.php` — Create and migrate the global `mapcentia` database.
-- `public/install/sql/createSettings.sql` — SQL for creating the GC2 settings schema.
+- `public/install/sql/createSettings.sql` — SQL for creating the Centia.io settings schema.
 - `public/install/sql/createUserDatabase.sql` — SQL for creating the `mapcentia` database (used by `userdatabase.php`).
 - `public/install/sql/createUserTable.sql` — SQL for creating the base `users` table in `mapcentia`.
 
