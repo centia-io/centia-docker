@@ -167,7 +167,7 @@ Your inputs are used only for the current operation and page reload.
 Open in your browser: `/install`
 
 What it does:
-- Displays PHP mode (mod_apache vs CGI/FastCGI).
+- Displays PHP mode (FrankenPHP).
 - Checks write access to `app/wms/mapfiles` and `app/tmp`.
 - Checks if MapScript is installed.
 - Lists PostgreSQL databases and, for each non-system DB, indicates:
