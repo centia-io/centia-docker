@@ -4,9 +4,18 @@ This repository provides a Docker-based setup for running the Centia.io stack wi
 PostgreSQL/PostGIS, and Redis. 
 It includes two app services (HTTP and WebSocket), a Postgres/PostGIS database, and Redis for caching.
 
+After installation, you can access the system with the CLI:
+
+```bash
+npm install -g @centia/cli
+centia connect http://localhost:81
+centia login
+```
+See [Centia.io documentaion](https://centia.io/docs) for more details.
+
 ## Prerequisites
 - Docker Desktop or Docker Engine + Docker Compose v2
-- Internet access to pull images and GitHub repos
+- Npm and Node.js for the CLI
 
 ## Quick start
 1. Clone this repository
