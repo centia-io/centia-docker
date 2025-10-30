@@ -7,11 +7,11 @@ It includes two app services (HTTP and WebSocket), a Postgres/PostGIS database, 
 After installation, you can access the system with the CLI:
 
 ```bash
-npm install -g @centia/cli
+npm install -g @centia-io/cli
 centia connect http://localhost:81
 centia login
 ```
-See [Centia.io documentaion](https://centia.io/docs) for more details.
+See [Getting started](https://centia.io/docs/start) for more details.
 
 ## Prerequisites
 - Docker Desktop or Docker Engine + Docker Compose v2
