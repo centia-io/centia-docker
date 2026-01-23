@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp AS base
+FROM dunglas/frankenphp:1-php8.4-trixie AS base
 
 ENV SERVER_NAME=:80
 ENV MAX_REQUESTS=:1000
