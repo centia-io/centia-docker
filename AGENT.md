@@ -235,8 +235,8 @@ const users = await api.getUserById({ user_id: 1 });
 import { CodeFlow } from "@centia-io/sdk";
 
 export const codeFlow = new CodeFlow({
-  host: "https://api.centia.io",
-  clientId: "your-client-id",
+  host: import.meta.env.VITE_CENTIA_HOST,
+  clientId: import.meta.env.VITE_CENTIA_CLIENT_ID,
   redirectUri: window.location.origin + "/auth/callback",
 });
 ```
@@ -247,11 +247,11 @@ export const codeFlow = new CodeFlow({
 import { PasswordFlow } from "@centia-io/sdk";
 
 export const flow = new PasswordFlow({
-  host: "https://api.centia.io",
-  clientId: "your-client-id",
-  username: process.env.BAAS_USERNAME!,
-  password: process.env.BAAS_PASSWORD!,
-  database: process.env.BAAS_DATABASE!,
+  host: process.env.CENTIA_HOST!,
+  clientId: process.env.CENTIA_CLIENT_ID!,
+  username: process.env.CENTIA_USERNAME!,
+  password: process.env.CENTIA_PASSWORD!,
+  database: process.env.CENTIA_DATABASE!,
 });
 
 await flow.signIn();
@@ -302,7 +302,7 @@ npm install graphql-request
 import { GraphQLClient, gql } from "graphql-request";
 
 const client = new GraphQLClient(
-  `${process.env.BAAS_HOST}/api/graphql/schema/my_schema`,
+  `${process.env.CENTIA_HOST}/api/graphql/schema/my_schema`,
   { headers: { Authorization: `Bearer ${token}` } }
 );
 
@@ -448,7 +448,7 @@ Examples:
 
 Hard rules:
 
-- Do NOT use `BAAS_ACCESS_TOKEN`
+- Do NOT use `CENTIA_ACCESS_TOKEN`
 - Do NOT embed service tokens
 - Do NOT store long-lived tokens in source
 - Do NOT call provisioning APIs
@@ -467,8 +467,8 @@ Example pattern:
 import { CodeFlow } from "@centia-io/sdk";
 
 const codeFlow = new CodeFlow({
-  host: import.meta.env.VITE_BAAS_HOST,
-  clientId: import.meta.env.VITE_BAAS_CLIENT_ID,
+  host: import.meta.env.VITE_CENTIA_HOST,
+  clientId: import.meta.env.VITE_CENTIA_CLIENT_ID,
   redirectUri: window.location.origin + "/auth/callback",
 });
 
@@ -511,7 +511,7 @@ Examples:
 Allowed auth methods:
 
 - `PasswordFlow` from `@centia-io/sdk`
-- `BAAS_ACCESS_TOKEN` env var (for MCP / HTTP fallback)
+- `CENTIA_ACCESS_TOKEN` env var (for MCP / HTTP fallback)
 
 Example:
 
@@ -519,11 +519,11 @@ Example:
 import { PasswordFlow } from "@centia-io/sdk";
 
 const flow = new PasswordFlow({
-  host: process.env.BAAS_HOST!,
-  clientId: process.env.BAAS_CLIENT_ID!,
-  username: process.env.BAAS_USERNAME!,
-  password: process.env.BAAS_PASSWORD!,
-  database: process.env.BAAS_DATABASE!,
+  host: process.env.CENTIA_HOST!,
+  clientId: process.env.CENTIA_CLIENT_ID!,
+  username: process.env.CENTIA_USERNAME!,
+  password: process.env.CENTIA_PASSWORD!,
+  database: process.env.CENTIA_DATABASE!,
 });
 
 await flow.signIn();
@@ -575,17 +575,17 @@ Forbidden:
 Preferred sources:
 
 1. Local file: openapi/openapi.json  
-2. URL: BAAS_OPENAPI_URL  
+2. URL: CENTIA_OPENAPI_URL  
 3. User-provided JSON  
 
 If allowed, fetch automatically:
 
 ```sh
 mkdir -p openapi
-if [ -n "$BAAS_OPENAPI_URL" ] && [ ! -f "openapi/openapi.fetched.json" ]; then
+if [ -n "$CENTIA_OPENAPI_URL" ] && [ ! -f "openapi/openapi.fetched.json" ]; then
   curl -fsSL \
-    -H "Authorization: Bearer $BAAS_ACCESS_TOKEN" \
-    "$BAAS_OPENAPI_URL" -o openapi/openapi.fetched.json
+    -H "Authorization: Bearer $CENTIA_ACCESS_TOKEN" \
+    "$CENTIA_OPENAPI_URL" -o openapi/openapi.fetched.json
 fi
 ```
 
@@ -761,15 +761,15 @@ Other:
 
 | Variable | Context | Required | Description |
 |----------|---------|----------|-------------|
-| `BAAS_HOST` | Server / provisioning | Yes | Centia API host (e.g. `https://api.centia.io`) |
-| `BAAS_CLIENT_ID` | Server / provisioning | Yes | OAuth client ID |
-| `BAAS_USERNAME` | Server / provisioning | Yes | Database username for `PasswordFlow` |
-| `BAAS_PASSWORD` | Server / provisioning | Yes | Database password for `PasswordFlow` |
-| `BAAS_DATABASE` | Server / provisioning | Yes | Parent database name |
-| `BAAS_ACCESS_TOKEN` | MCP / HTTP fallback | No | Pre-issued access token (alternative to `PasswordFlow`) |
-| `BAAS_OPENAPI_URL` | Development | No | URL to fetch OpenAPI spec from |
-| `VITE_BAAS_HOST` | Browser apps (Vite) | Yes | Centia API host for frontend |
-| `VITE_BAAS_CLIENT_ID` | Browser apps (Vite) | Yes | OAuth client ID for frontend |
+| `CENTIA_HOST` | Server / provisioning | Yes | Centia API host (e.g. `https://api.centia.io`) |
+| `CENTIA_CLIENT_ID` | Server / provisioning | Yes | OAuth client ID |
+| `CENTIA_USERNAME` | Server / provisioning | Yes | Database username for `PasswordFlow` |
+| `CENTIA_PASSWORD` | Server / provisioning | Yes | Database password for `PasswordFlow` |
+| `CENTIA_DATABASE` | Server / provisioning | Yes | Parent database name |
+| `CENTIA_ACCESS_TOKEN` | MCP / HTTP fallback | No | Pre-issued access token (alternative to `PasswordFlow`) |
+| `CENTIA_OPENAPI_URL` | Development | No | URL to fetch OpenAPI spec from |
+| `VITE_CENTIA_HOST` | Browser apps (Vite) | Yes | Centia API host for frontend |
+| `VITE_CENTIA_CLIENT_ID` | Browser apps (Vite) | Yes | OAuth client ID for frontend |
 
 Never commit `.env` files containing secrets. Provide a `.env.example` with placeholder values.
 
