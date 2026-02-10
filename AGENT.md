@@ -154,31 +154,117 @@ File:
 
 src/baas/client.ts
 
-Example (server / provisioning context):
+Available exports:
+
+```ts
+import { CodeFlow, PasswordFlow, SignUp, Sql, Rpc, createApi, createSqlBuilder } from "@centia-io/sdk";
+import type { RpcRequest, RpcResponse, PgTypes, DBSchema, RowOfSelect } from "@centia-io/sdk";
+```
+
+### SQL execution (server & browser):
 
 ```ts
 import { Sql } from "@centia-io/sdk";
 
 export const sql = new Sql();
+
+const res = await sql.exec({
+  q: "SELECT * FROM users WHERE id = :id::int",
+  params: { id: 1 },
+});
+console.log(res.data);
 ```
 
-Example (browser / SPA context — see Section 8A):
+### Type-safe SQL builder:
 
 ```ts
-import { createClient } from "@centia-io/sdk";
+import { createSqlBuilder, Sql } from "@centia-io/sdk";
+import type { DBSchema, RowOfSelect } from "@centia-io/sdk";
 
-export const baas = createClient({
-  baseUrl: import.meta.env.VITE_BAAS_BASE_URL,
+const schema = { /* ... */ } as const satisfies DBSchema;
+const b = createSqlBuilder(schema);
+const sql = new Sql();
+
+// SELECT
+const selectReq = b.table("users").select(["id", "name"]).andWhere({ id: [1, 2] }).limit(10);
+type Row = RowOfSelect<typeof selectReq>;
+const rows: Row[] = (await sql.exec(selectReq.toSql())).data;
+
+// INSERT
+const insertReq = b.table("users").insert({ name: "Alice" }).returning(["id"]);
+
+// UPDATE
+const updateReq = b.table("users").update({ name: "Bob" }).where({ id: 1 });
+
+// DELETE
+const deleteReq = b.table("users").delete().where({ id: 2 });
+```
+
+### JSON-RPC:
+
+```ts
+import { Rpc } from "@centia-io/sdk";
+
+const rpc = new Rpc();
+
+const res = await rpc.call({
+  jsonrpc: "2.0",
+  method: "myMethod",
+  params: { key: "value" },
+  id: 1,
 });
+```
+
+### Typed RPC with createApi:
+
+```ts
+import { createApi } from "@centia-io/sdk";
+
+interface MyApi {
+  getUserById(params: { user_id: number }): Promise<Array<{ name: string }>>;
+}
+
+const api = createApi<MyApi>();
+const users = await api.getUserById({ user_id: 1 });
+```
+
+### Browser auth — CodeFlow (see Section 8A):
+
+```ts
+import { CodeFlow } from "@centia-io/sdk";
+
+export const codeFlow = new CodeFlow({
+  host: "https://api.centia.io",
+  clientId: "your-client-id",
+  redirectUri: window.location.origin + "/auth/callback",
+});
+```
+
+### Server auth — PasswordFlow (see Section 8B):
+
+```ts
+import { PasswordFlow } from "@centia-io/sdk";
+
+export const flow = new PasswordFlow({
+  host: "https://api.centia.io",
+  clientId: "your-client-id",
+  username: process.env.BAAS_USERNAME!,
+  password: process.env.BAAS_PASSWORD!,
+  database: process.env.BAAS_DATABASE!,
+});
+
+await flow.signIn();
 ```
 
 Rules:
 
-- Single shared client
+- Single shared client instances
 - No hardcoded credentials
 - Env-driven config
-- Use `Sql` for server-side / direct SQL access
-- Use `createClient` for browser apps that need OAuth
+- Use `Sql` / `createSqlBuilder` for database queries
+- Use `Rpc` / `createApi` for JSON-RPC calls
+- Use `CodeFlow` for browser OAuth
+- Use `PasswordFlow` for server/CLI auth
 
 ---
 
@@ -241,25 +327,38 @@ Browser apps must use OAuth Authorization Code Flow (PKCE) via SDK.
 
 Required implementation:
 
-Use `@centia-io/sdk` OAuth helpers.
+Use `CodeFlow` from `@centia-io/sdk`.
 
 Agents must NOT implement OAuth manually.
 
 Example pattern:
 
 ```ts
-import { createClient } from "@centia-io/sdk";
+import { CodeFlow } from "@centia-io/sdk";
 
-const baas = createClient({
-  baseUrl: import.meta.env.VITE_BAAS_BASE_URL,
+const codeFlow = new CodeFlow({
+  host: import.meta.env.VITE_BAAS_HOST,
+  clientId: import.meta.env.VITE_BAAS_CLIENT_ID,
+  redirectUri: window.location.origin + "/auth/callback",
 });
 
-await baas.auth.signInWithOAuth({
-  provider: "keycloak",
+// Handle redirect callback (call on page load)
+codeFlow.redirectHandle().then((signedIn) => {
+  if (signedIn) console.log("User signed in");
 });
+
+// Trigger login
+function onLoginClick() {
+  codeFlow.signIn();
+}
+
+// Trigger logout
+function onLogoutClick() {
+  codeFlow.signOut();
+}
 ```
 
-Token storage must be SDK-managed.
+Token storage is SDK-managed via `CodeFlow`.
 
 Forbidden:
 
@@ -279,11 +378,28 @@ Examples:
 - MCP servers
 - Provisioning scripts
 
-Allowed auth method:
+Allowed auth methods:
 
-BAAS_ACCESS_TOKEN
+- `PasswordFlow` from `@centia-io/sdk`
+- `BAAS_ACCESS_TOKEN` env var (for MCP / HTTP fallback)
 
-Stored in:
+Example:
+
+```ts
+import { PasswordFlow } from "@centia-io/sdk";
+
+const flow = new PasswordFlow({
+  host: process.env.BAAS_HOST!,
+  clientId: process.env.BAAS_CLIENT_ID!,
+  username: process.env.BAAS_USERNAME!,
+  password: process.env.BAAS_PASSWORD!,
+  database: process.env.BAAS_DATABASE!,
+});
+
+await flow.signIn();
+```
+
+Credentials stored in:
 
 .env
 
@@ -314,12 +430,13 @@ Forbidden:
 
 # 9) Auth Responsibility Split
 
-| Context | Auth Method | Interface |
+| Context | Auth Method | SDK Class |
 |--------|--------------|-----------|
-| Browser app | OAuth Code Flow (PKCE) | SDK |
-| Backend app | Access token | SDK / HTTP |
-| Provisioning | Access token | MCP / HTTP |
-| CLI tools | Access token | SDK / HTTP |
+| Browser app | OAuth Code Flow (PKCE) | `CodeFlow` |
+| Browser signup | OAuth redirect | `SignUp` |
+| Backend app | Username/password | `PasswordFlow` |
+| Provisioning | Access token / password | `PasswordFlow` / MCP / HTTP |
+| CLI tools | Username/password | `PasswordFlow` |
 
 ---
 
@@ -514,9 +631,15 @@ Other:
 
 | Variable | Context | Required | Description |
 |----------|---------|----------|-------------|
-| `BAAS_ACCESS_TOKEN` | Server / provisioning | Yes | Auth token for backend and provisioning operations |
+| `BAAS_HOST` | Server / provisioning | Yes | Centia API host (e.g. `https://api.centia.io`) |
+| `BAAS_CLIENT_ID` | Server / provisioning | Yes | OAuth client ID |
+| `BAAS_USERNAME` | Server / provisioning | Yes | Database username for `PasswordFlow` |
+| `BAAS_PASSWORD` | Server / provisioning | Yes | Database password for `PasswordFlow` |
+| `BAAS_DATABASE` | Server / provisioning | Yes | Parent database name |
+| `BAAS_ACCESS_TOKEN` | MCP / HTTP fallback | No | Pre-issued access token (alternative to `PasswordFlow`) |
 | `BAAS_OPENAPI_URL` | Development | No | URL to fetch OpenAPI spec from |
-| `VITE_BAAS_BASE_URL` | Browser apps (Vite) | Yes | Base URL for the Centia BaaS instance |
+| `VITE_BAAS_HOST` | Browser apps (Vite) | Yes | Centia API host for frontend |
+| `VITE_BAAS_CLIENT_ID` | Browser apps (Vite) | Yes | OAuth client ID for frontend |
 
 Never commit `.env` files containing secrets. Provide a `.env.example` with placeholder values.
 
