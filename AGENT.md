@@ -43,9 +43,10 @@ Use ONLY:
 Applies to (verify availability against installed SDK version):
 
 - Auth
-- Database CRUD
+- Database CRUD (SQL, SQL builder)
 - Queries & filtering
 - Pagination
+- JSON-RPC
 - Client initialization
 
 Forbidden:
@@ -228,7 +229,7 @@ const api = createApi<MyApi>();
 const users = await api.getUserById({ user_id: 1 });
 ```
 
-### Browser auth — CodeFlow (see Section 8A):
+### Browser auth — CodeFlow (see Section 9A):
 
 ```ts
 import { CodeFlow } from "@centia-io/sdk";
@@ -240,7 +241,7 @@ export const codeFlow = new CodeFlow({
 });
 ```
 
-### Server auth — PasswordFlow (see Section 8B):
+### Server auth — PasswordFlow (see Section 9B):
 
 ```ts
 import { PasswordFlow } from "@centia-io/sdk";
@@ -268,7 +269,136 @@ Rules:
 
 ---
 
-# 7) HTTP Fallback Layer
+# 7) GraphQL API
+
+The Centia GraphQL API is auto-generated from your database schema. It is NOT part of `@centia-io/sdk`.
+
+Endpoint: `POST https://api.centia.io/api/graphql/schema/{schema_name}`
+
+Access methods (in priority order):
+
+1. MCP `postGraphQL` tool (agents / provisioning)
+2. `graphql-request` library (runtime app code)
+3. Plain `fetch` (lightweight / no dependencies)
+
+### Agent / MCP usage:
+
+```ts
+postGraphQL({
+  schema: "my_schema",
+  query: "{ getArtists { artist_id legal_name } }",
+});
+```
+
+### Runtime app usage:
+
+For JS/TS application code, use [`graphql-request`](https://github.com/graffle-js/graphql-request):
+
+```sh
+npm install graphql-request
+```
+
+```ts
+import { GraphQLClient, gql } from "graphql-request";
+
+const client = new GraphQLClient(
+  `${process.env.BAAS_HOST}/api/graphql/schema/my_schema`,
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+
+const query = gql`
+  {
+    getArtists(where: { instrument: { eq: "guitar" } }, limit: 10) {
+      artist_id
+      legal_name
+    }
+  }
+`;
+
+const data = await client.request(query);
+```
+
+### Query naming convention:
+
+Query and mutation names are auto-generated from table names in camelCase:
+
+| Operation | Pattern | Example |
+|-----------|---------|---------|
+| Select | `get[TableName]` | `getArtists` |
+| Insert | `insert[TableName]` | `insertArtists` |
+| Update | `update[TableName]` | `updateArtists` |
+| Delete | `delete[TableName]` | `deleteArtists` |
+
+### Filtering operators:
+
+Comparison: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`, `ilike`
+
+Logical: `and`, `or`, `not`
+
+```graphql
+{
+  getArtists(where: {
+    and: [
+      { legal_name: { ilike: "%Linus%" } }
+      { instrument: { eq: "guitar" } }
+    ]
+  }) {
+    artist_id
+    legal_name
+  }
+}
+```
+
+### Pagination:
+
+```graphql
+{ getArtists(limit: 10, offset: 20) { artist_id } }
+```
+
+### Mutations:
+
+```graphql
+# Insert (single or batch via objects array)
+mutation {
+  insertArtists(objects: [{ legal_name: "Alice", instrument: "drums" }]) {
+    artist_id
+  }
+}
+
+# Update
+mutation {
+  updateArtists(where: { artist_id: { eq: 1 } }, data: { instrument: "bass" }) {
+    artist_id
+  }
+}
+
+# Delete
+mutation {
+  deleteArtists(where: { artist_id: { eq: 1 } }) {
+    artist_id
+  }
+}
+```
+
+### Nested queries (via foreign keys):
+
+```graphql
+{
+  getAlbums {
+    title
+    bands {
+      name
+      subgenre
+    }
+  }
+}
+```
+
+**Introspection** is supported via standard `__schema` queries.
+
+---
+
+# 8) HTTP Fallback Layer
 
 If needed, create:
 
@@ -294,7 +424,7 @@ Source: https://centia.io/docs/…
 
 ---
 
-# 8) Authentication Model Policy
+# 9) Authentication Model Policy
 
 Authentication depends on runtime environment.
 
@@ -428,7 +558,7 @@ Forbidden:
 
 ---
 
-# 9) Auth Responsibility Split
+# 10) Auth Responsibility Split
 
 | Context | Auth Method | SDK Class |
 |--------|--------------|-----------|
@@ -440,7 +570,7 @@ Forbidden:
 
 ---
 
-# 10) OpenAPI Access Policy
+# 11) OpenAPI Access Policy
 
 Preferred sources:
 
@@ -463,7 +593,7 @@ OpenAPI is the contract for all endpoints it describes.
 
 ---
 
-# 11) Documentation Access Policy
+# 12) Documentation Access Policy
 
 Primary docs:
 
@@ -491,7 +621,7 @@ Docs-backed endpoints allowed only when fully specified.
 
 ---
 
-# 12) Safety Rules (Provisioning)
+# 13) Safety Rules (Provisioning)
 
 Before destructive changes, present plan:
 
@@ -512,7 +642,7 @@ Proceed only if explicitly requested.
 
 ---
 
-# 13) Project Structure Standard
+# 14) Project Structure Standard
 
 ```
 src/
@@ -534,7 +664,7 @@ vendor/
 
 ---
 
-# 14) Code Quality Rules
+# 15) Code Quality Rules
 
 - TypeScript strict mode preferred
 - Centralize schema/table names
@@ -551,7 +681,7 @@ if (error) throw new Error(`Query failed: ${error.message}`);
 
 ---
 
-# 15) Delivery Requirements
+# 16) Delivery Requirements
 
 Every generated solution must include:
 
@@ -565,7 +695,7 @@ Every generated solution must include:
 
 ---
 
-# 16) Available MCP Tools Reference
+# 17) Available MCP Tools Reference
 
 Schema management:
 
@@ -627,7 +757,7 @@ Other:
 
 ---
 
-# 17) Environment Variables
+# 18) Environment Variables
 
 | Variable | Context | Required | Description |
 |----------|---------|----------|-------------|
@@ -645,7 +775,7 @@ Never commit `.env` files containing secrets. Provide a `.env.example` with plac
 
 ---
 
-# 18) Agent Self-Check
+# 19) Agent Self-Check
 
 Before finishing:
 
